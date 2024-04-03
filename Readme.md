@@ -19,14 +19,8 @@
 You can find the frontend files in the `frontend` directory, which includes a single HTML file as requested.
 
 ## Usage
-- Access the application by visiting `http://localhost:8000` in your web browser.
+- Api available via localhost:8000
+- in the frontend directory, open the index.html file
 
-## Contributing
-- Fork the repository.
-- Create a new branch.
-- Make your changes and commit them.
-- Push your changes to your forked repository.
-- Submit a pull request.
 
-## License
-This project is licensed under the [MIT License](LICENSE).
+by Clinton M.

@@ -25,3 +25,7 @@ class BusViewset(
 class SeatReservationModelViewset(mixins.CreateModelMixin, viewsets.GenericViewSet):
     queryset = SeatReservation.objects.all()
     serializer_class = SeatReservationSerializer
+
+
+# TODO logic for the service required every 6 months for each buses
+#  may need to extend models status field with a new status for this purpose ...
