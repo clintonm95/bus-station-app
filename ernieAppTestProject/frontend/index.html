@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Bus and Driver Data</title>
+    <style>
+        .seat {
+        width: 50px;
+        height: 50px;
+        background-color: #ccc;
+        margin: 5px;
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: transform 0.1s ease-in-out;
+    }
+    .seat:active {
+        transform: scale(0.90);
+    }
+        .reserved {
+            background-color: #c00;
+        }
+        #bus {
+            width: 260px; /* width of 4 seats including margins and aisle */
+            border: 2px solid #000; /* outline around the bus */
+            padding: 10px;
+        }
+        .aisle {
+            width: 20px; /* width of the aisle */
+            display: inline-block;
+        }
+        .row {
+            height: 60px; /* height of a seat including margin */
+        }
+        .container {
+            margin: 0 auto; /* center the container */
+            width: 80%; /* take up 80% of the viewport width */
+            max-width: 800px; /* but don't get bigger than 800px */
+        }
+        .busdetails {
+            padding: 10px;
+            display: none;
+        }
+
+        .busSeats {
+            padding: 10px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>BUS RESERVATION APP</h1>
+
+        <h1>Buses</h1>
+        
+        <div id="buses">
+            <div id="busList"><label for="busSelect">Select a bus:</label>
+            <select id="busSelect">
+                <option value=null>---</option>
+            </select>
+        </div>
+        <div class="busdetails">
+            <h2>Bus Details</h2>
+            <div id="busDetails">
+                <p><strong>Bus ID:</strong> <span id="busId"></span></p>
+                <p><strong>Status:</strong> <span id="busStatus"></span></p>
+                <p><strong>Liscence Plate:</strong> <span id="liscencePlate"></span></p>
+                <p><strong>Starting Station:</strong> <span id="startingStation"></span></p>
+                <p><strong>Departure time</strong> <span id="departureTime"></span></p>
+                <p><strong>Final Station:</strong> <span id="finalStation"></span></p>
+                <p><strong>Max Seats:</strong> <span id="maxSeats"></span></p>
+                <p><strong>Reserved Seats:</strong> <span id="reservedSeats"></span></p>
+        </div>
+            
+        </div>
+
+        <div style="display: flex; gap: 30px;">
+        <div class="busSeats" id="bus">
+        </div>
+        <div id="reserveForm" style="display: block;">
+            <h2>Reserve Seat</h2>
+            <form id="reservationForm">
+            <label for="seatNumber">Seat Number:</label>
+            <input id='seatNumber' style="border: none; outline: none" type="number" id="seatNumber" name="seatNumber" readonly>
+            <br>
+            <label for="fullname">Full Name:</label>
+            <input type="text" id="fullName" name="fullName">
+            <br>
+            <button id='reserveButton' type="submit">Reserve</button>
+        </form>
+
+
+        </div>
+        </div>
+    </div>
+
+    <script>
+        const baseApiUrl = 'http://0.0.0.0:8000/'
+        
+    const getBusList = () => {
+        return fetch(baseApiUrl +'bus/')
+            .then(response => response.json());
+    }
+
+    const generateBusSelectOptions = (buses) => {
+        const busSelect = document.getElementById('busSelect');
+        buses.forEach(bus => {
+            const option = document.createElement('option');
+            option.value = bus.id;
+            option.text = `Bus ${bus.liscence_plate}, from ${bus.starting_station} to ${bus.final_station}`;
+            busSelect.appendChild(option);
+        });
+    }
+
+        const getBusDetails = (busId) => {
+
+            return busId && fetch(baseApiUrl + `bus/${busId}`)
+                .then(response => response.json());
+        }
+
+        const displayBusDetailsAndSeats = (bus) => {
+            const busDetails = document.getElementsByClassName('busdetails')[0];
+            const busSeats = document.getElementsByClassName('busSeats')[0];
+            busDetails.style.display = 'block';
+            busSeats.style.display = 'block';
+            setBusDetails(bus);
+            generateBusSeats(bus);
+
+            const reserveButton = document.getElementById('reserveButton');
+
+            if (['LEFT', 'LEAVING'].includes(bus.status)) {
+                reserveButton.disabled = true;
+            } else if (bus.reserved_seats.length >= bus.max_seats) {
+                reserveButton.textContent = 'No seats available';
+                reserveButton.disabled = true;}
+            else {
+                reserveButton.disabled = false;
+                reserveButton.textContent = 'Reserve';
+            }
+        }
+
+        const busSelect = document.getElementById('busSelect');
+
+        busSelect.addEventListener('change', function() {
+            // Clear the bus div and form
+            const busDetails = document.getElementsByClassName('busdetails')[0];
+            const busSeats = document.getElementsByClassName('busSeats')[0];
+            document.getElementById('bus').innerHTML = '';
+            resetReservationForm();
+            if (this.value === '') {
+                busDetails.style.display = 'none';
+                busSeats.style.display = 'none';
+                return;
+            }
+            getBusDetails(this.value).then(displayBusDetailsAndSeats);
+    });
+
+        const resetReservationForm = () => {
+            document.getElementById('seatNumber').value = null;
+            document.getElementById('fullName').value = '';
+        }
+            
+        const setBusDetails = ( bus ) => {
+            document.getElementById('busId').innerText = bus.id;
+            document.getElementById('busStatus').innerText = bus.status;
+            document.getElementById('liscencePlate').innerText = bus.liscence_plate;
+            document.getElementById('startingStation').innerText = bus.starting_station;
+            document.getElementById('finalStation').innerText = bus.final_station;
+            document.getElementById('maxSeats').innerText = bus.max_seats;
+            document.getElementById('reservedSeats').innerText = bus.reserved_seats.length;
+            document.getElementById('departureTime').innerText = new Date(bus.time_of_departure).toLocaleString();
+        }
+
+        const generateBusSeats = (bus) => {
+            const busDiv = document.getElementById('bus');
+            busDiv.innerHTML = '<h3> Seats selector </h3>';
+            busDiv.innerHTML += '<h4> Front ⬆ </h3>';
+            for (let i = 0; i < bus.max_seats; i++) {
+                // Create a new row for every 4 seats
+                if (i % 4 === 0) {
+                    busDiv.innerHTML += '<div class="row"></div>';
+                }
+                // Get the last row
+                const rows = busDiv.getElementsByClassName('row');
+                const lastRow = rows[rows.length - 1];
+                // Add an aisle after the second seat in each row
+                if (i % 4 === 2) {
+                    lastRow.innerHTML += '<div class="aisle"></div>';
+                }
+                // Add a seat
+                // Check if seat is reserved
+                if (bus.reserved_seats.includes(i+1)) {
+                    lastRow.innerHTML += `<div class="seat reserved" key="${i+1}">${i+1}</div>`;
+                } else {
+                lastRow.innerHTML += `<div class="seat" key="${i+1}">${i+1}</div>`;}
+            }
+            
+            const busSeats = document.getElementsByClassName('seat');
+            const isBusLeaving = ['LEAVING', 'LEFT'].includes(bus.status);
+            const isBusAlmostFull = bus.max_seats - bus.reserved_seats.length < 10;
+
+            Array.from(busSeats).forEach(seat => {
+            let color = "#CCFFCC";
+            if (!seat.classList.contains('reserved')) {
+                if (isBusAlmostFull) {
+                    color = '#FFFF99';
+                } else if (isBusLeaving) {
+                    color = '#0099FF';
+                }
+                seat.style.backgroundColor = color;
+            }
+
+            // Add click event to each seat
+            seat.addEventListener('click', function() {
+                if (!this.classList.contains('reserved')) {
+                    // Show the reserve form and set the seat number
+                    const reserveForm = document.getElementById('reserveForm');
+                    reserveForm.style.display = 'block';
+                    const seatNumberInput = document.getElementById('seatNumber');
+                    seatNumberInput.value = this.textContent;
+                }
+            });
+        });
+    }
+
+    getBusList().then(generateBusSelectOptions);
+    getBusDetails();
+
+    // Add submit event to the reserve form
+    document.querySelector('#reserveForm form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const seatNumber = document.getElementById('seatNumber').value;
+        // Reserve the seat (you need to implement this)
+        reserveSeat(seatNumber);
+    });
+
+
+    const reserveSeat = () => {
+            const seatNumber = document.getElementById('seatNumber').value
+            const fullName = document.getElementById('fullName').value;
+            const busId = document.getElementById('busId').innerText;
+
+            if (!seatNumber || !fullName) {
+                alert('Please select a seat and fill in your details');
+                return;
+            }
+            return fetch(baseApiUrl + `seat-reservation/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    bus: busId,
+                    seat_number: seatNumber,
+                    passenger_fullname: fullName
+                })
+            }).then(response => {
+                if (response.ok) {
+                    // Reset the form
+                    document.getElementById('seatNumber').value = '';
+                    document.getElementById('fullName').value = '';
+                    // Refetch the bus details and update the seats
+                    getBusDetails(busId).then(displayBusDetailsAndSeats);
+                } else {
+                    throw new Error('Reservation failed');
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        
+        }
+
+
+    </script>
+
+
+</body>
+</html>
